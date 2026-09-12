@@ -83,10 +83,12 @@ local Library = {
     Flags = {},
     MenuKeybind = tostring(Enum.KeyCode.X),
 
-    Directory = "niggahack",
+    Directory = "MethaneUI",
+    Brand = "methane",       -- script can override: Library.Brand = "..."
+    GameName = "test",       -- script can override: Library.GameName = "..."
     Folders = {
         Assets = "/Assets",
-        Configs = "/Configs"
+        Configs = "/methane/cfgs/test" -- rebuilt by EnsureConfigFolders
     },
 
     FontSize = 9,
@@ -208,15 +210,53 @@ do
     }
 
     -- Folders
+    Library.EnsureConfigFolders = function(Self)
+        local brand = tostring((Self and Self.Brand) or Library.Brand or "methane"):gsub("[^%w%-%_]", "")
+        local gameName = tostring((Self and Self.GameName) or Library.GameName or "test"):gsub("[^%w%-%_]", "")
+        if brand == "" then brand = "methane" end
+        if gameName == "" then gameName = "test" end
+        Library.Brand = brand
+        Library.GameName = gameName
+        Library.Folders.Configs = string.format("/%s/cfgs/%s", brand, gameName)
+
+        if type(isfolder) == "function" and type(makefolder) == "function" then
+            if not isfolder(Library.Directory) then
+                makefolder(Library.Directory)
+            end
+            if not isfolder(Library.Directory .. "/Assets") then
+                makefolder(Library.Directory .. "/Assets")
+            end
+            -- MethaneUI/methane
+            local brandPath = Library.Directory .. "/" .. brand
+            if not isfolder(brandPath) then makefolder(brandPath) end
+            -- MethaneUI/methane/cfgs
+            local cfgsPath = brandPath .. "/cfgs"
+            if not isfolder(cfgsPath) then makefolder(cfgsPath) end
+            -- MethaneUI/methane/cfgs/test
+            local gamePath = cfgsPath .. "/" .. gameName
+            if not isfolder(gamePath) then makefolder(gamePath) end
+        end
+        return Library.Directory .. Library.Folders.Configs
+    end
+
     if not isfolder(Library.Directory) then
         makefolder(Library.Directory)
     end
 
     for _, Folder in Library.Folders do
         if not isfolder(Library.Directory .. Folder) then
-            makefolder(Library.Directory .. Folder)
+            -- nested path: create step by step
+            local full = Library.Directory
+            for part in string.gmatch(Folder, "[^/]+") do
+                full = full .. "/" .. part
+                if not isfolder(full) then
+                    pcall(makefolder, full)
+                end
+            end
         end
     end
+
+    pcall(function() Library:EnsureConfigFolders() end)
 
     local Themes = {
         ["Preset"] = {
@@ -7575,12 +7615,14 @@ do
                     TextColor3 = Color3.fromRGB(235, 235, 235),
                     TextStrokeColor3 = Color3.fromRGB(255, 255, 255),
                     Text = Window.Title,
-                    AnchorPoint = Vector2.new(0, 1),
+                    AnchorPoint = Vector2.new(0.5, 1),
                     BorderSizePixel = 0,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, -1, 0, -8),
+                    Position = UDim2.new(0.5, 0, 0, -6),
                     AutomaticSize = Enum.AutomaticSize.XY,
-                    TextSize = 9,
+                    TextSize = 13,
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                 }):AddToTheme({ TextColor3 = "Text" })
 
@@ -7694,8 +7736,18 @@ do
 
                 -- Brand row (logo + name) above main tabs — Align: Left | Center | Right
                 Window.BrandAlign = tostring(Params.BrandAlign or Params.brandAlign or "Right")
-                Window.BrandName = tostring(Params.BrandName or Params.brandName or Params.Title or Window.Title or "UI")
-                Window.BrandLogo = Params.Logo or Params.logo or "" -- rbxassetid or blank
+                Window.BrandName = tostring(Params.BrandName or Params.brandName or Params.Title or Window.Title or "Methane")
+                local defaultLogo = "rbxassetid://72404794660074"
+                local logoIn = Params.Logo or Params.logo
+                if logoIn == nil or logoIn == "" then
+                    Window.BrandLogo = defaultLogo
+                else
+                    local s = tostring(logoIn)
+                    if not s:find("rbxassetid://", 1, true) and s:match("^%d+$") then
+                        s = "rbxassetid://" .. s
+                    end
+                    Window.BrandLogo = s
+                end
 
                 Items["BrandBar"] = Library:Create("Frame", {
                     Name = "\0",
@@ -7729,7 +7781,7 @@ do
                     Parent = Items["BrandBar"].Instance,
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(0, 14, 0, 14),
+                    Size = UDim2.new(0, 16, 0, 16),
                     Image = tostring(Window.BrandLogo or ""),
                     ScaleType = Enum.ScaleType.Fit,
                     ImageColor3 = Color3.new(1, 1, 1),
@@ -8581,10 +8633,8 @@ do
                     BorderSizePixel = 0
                 })
 
-                -- Risky = red label only (no hover popup)
+                -- Risky = red label only — never attach tooltip / RISKY popup
                 if Toggle.Tooltip and not Toggle.Risky then
-                    Items["Toggle"]:Tooltip(Toggle.Tooltip)
-                elseif Toggle.Tooltip and typeof(Toggle.Tooltip) == "table" and not Toggle.Tooltip.Risky then
                     Items["Toggle"]:Tooltip(Toggle.Tooltip)
                 end
 
