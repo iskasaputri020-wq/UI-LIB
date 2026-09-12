@@ -1077,8 +1077,14 @@ do
     end
 
     Library.Round = function(Self, Number, Float)
-        local Multiplier = 1 / (Float or 1)
-        return math.floor(Number * Multiplier) / Multiplier
+        Number = tonumber(Number) or 0
+        Float = tonumber(Float)
+        -- Decimals is step size: 0 / nil => integers, 0.01 => two places, etc.
+        if Float == nil or Float == 0 then
+            return math.floor(Number + 0.5)
+        end
+        local Multiplier = 1 / Float
+        return math.floor(Number * Multiplier + 0.5) / Multiplier
     end
 
     Library.RegisterLayout = function(Self, Id, Data)
@@ -8575,12 +8581,12 @@ do
                     BorderSizePixel = 0
                 })
 
-                local TooltipData = Toggle.Tooltip
-                if Toggle.Risky and typeof(Toggle.Tooltip) == "table" then
-                    TooltipData = table.clone(Toggle.Tooltip)
-                    TooltipData.Risky = true
+                -- Risky = red label only (no hover popup)
+                if Toggle.Tooltip and not Toggle.Risky then
+                    Items["Toggle"]:Tooltip(Toggle.Tooltip)
+                elseif Toggle.Tooltip and typeof(Toggle.Tooltip) == "table" and not Toggle.Tooltip.Risky then
+                    Items["Toggle"]:Tooltip(Toggle.Tooltip)
                 end
-                Items["Toggle"]:Tooltip(TooltipData)
 
                 Items["Indicator"] = Library:Create("Frame", {
                     Name = "\0",
@@ -8625,8 +8631,10 @@ do
                 }):AddToTheme({ TextColor3 = 'Inactive Text' })
 
                 if Toggle.Risky then
+                    -- dead/dim red until enabled
+                    local dim = Library.Theme["Risky"]:Lerp(Color3.new(0, 0, 0), 0.45)
                     Items["Text"]:ChangeItemTheme({ TextColor3 = "Risky" })
-                    Items["Text"].Instance.TextColor3 = Library.Theme["Risky"]
+                    Items["Text"].Instance.TextColor3 = dim
                 end
 
                 Items["SubElements"] = Library:Create("Frame", {
@@ -8664,13 +8672,20 @@ do
 
                 if Bool then
                     Items["Inline"]:Tween({ BackgroundTransparency = 0, Size = UDim2.new(1, 0, 1, 0) })
-                    if not Toggle.Risky then
+                    if Toggle.Risky then
+                        Items["Text"]:ChangeItemTheme({ TextColor3 = "Risky" })
+                        Items["Text"]:Tween({ TextColor3 = Library.Theme["Risky"] })
+                    else
                         Items["Text"]:ChangeItemTheme({ TextColor3 = "Text" })
                         Items["Text"]:Tween({ TextColor3 = Library.Theme.Text })
                     end
                 else
                     Items["Inline"]:Tween({ BackgroundTransparency = 1, Size = UDim2.new(0, 0, 0, 0) })
-                    if not Toggle.Risky then
+                    if Toggle.Risky then
+                        local dim = Library.Theme["Risky"]:Lerp(Color3.new(0, 0, 0), 0.45)
+                        Items["Text"]:ChangeItemTheme({ TextColor3 = "Risky" })
+                        Items["Text"]:Tween({ TextColor3 = dim })
+                    else
                         Items["Text"]:ChangeItemTheme({ TextColor3 = "Inactive Text" })
                         Items["Text"]:Tween({ TextColor3 = Library.Theme["Inactive Text"] })
                     end
@@ -9187,15 +9202,16 @@ do
                     Name = "\0",
                     FontFace = Library.Font,
                     TextSize = Library.FontSize,
-                    Parent = Items["Accent"].Instance,
+                    Parent = Items["Slider"].Instance,
                     TextColor3 = Library.Theme["Text"],
-                    Text = "100%",
+                    Text = "0",
                     AnchorPoint = Vector2.new(1, 0),
                     Size = UDim2.new(0, 0, 0, 12),
                     BackgroundTransparency = 1,
                     Position = UDim2.new(1, 0, 0, 0),
                     BorderSizePixel = 0,
-                    AutomaticSize = Enum.AutomaticSize.X
+                    AutomaticSize = Enum.AutomaticSize.X,
+                    TextXAlignment = Enum.TextXAlignment.Right
                 }):AddToTheme({ TextColor3 = 'Text' })
 
                 Library:Create("UIStroke", {
@@ -9219,7 +9235,7 @@ do
                 Items["Accent"]:Tween(
                     { Size = UDim2.new((Slider.Value - Slider.Min) / (Slider.Max - Slider.Min), 0, 1, 0) },
                     TweenInfo.new(Library.Animation.Time, Enum.EasingStyle.Quart, Enum.EasingDirection.Out))
-                Items["Value"].Instance.Text = string.format("%s%s", Slider.Value, Slider.Suffix)
+                Items["Value"].Instance.Text = string.format("%s%s", tostring(Slider.Value), tostring(Slider.Suffix or ""))
 
                 Flags[Slider.Flag] = Slider.Value
                 Library:SafeCall(Slider.Callback, Slider.Value)
