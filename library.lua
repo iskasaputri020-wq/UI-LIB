@@ -8095,47 +8095,38 @@ do
                     Name = "\0",
                     Parent = Items["Page"].Instance,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 0, 0, 32),
-                    Size = UDim2.new(1, 0, 1, -32),
+                    Position = UDim2.new(0, 0, 0, 34),
+                    Size = UDim2.new(1, 0, 1, -34),
                     BorderSizePixel = 0
                 })
 
+                -- Sub-tab strip (matches main PagesOutline style)
                 Items["SubPages"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["Page"].Instance,
-                    BackgroundColor3 = Library.Theme["Section"],
-                    BackgroundTransparency = 0,
                     Position = UDim2.new(0, 14, 0, 0),
-                    Size = UDim2.new(1, -28, 0, 26),
-                    BorderSizePixel = 0
-                }):AddToTheme({ BackgroundColor3 = "Section" })
-
-                Library:Create("UIStroke", {
-                    Name = "\0",
-                    Parent = Items["SubPages"].Instance,
-                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                    LineJoinMode = Enum.LineJoinMode.Miter,
-                    Color = Library.Theme["Outline"],
-                    Thickness = 1
-                }):AddToTheme({ Color = "Outline" })
+                    Size = UDim2.new(1, -28, 0, 28),
+                    BorderSizePixel = 0,
+                    BackgroundColor3 = Library.Theme["Border 2"]
+                }):AddToTheme({ BackgroundColor3 = "Border 2" })
 
                 Library:Create("UIListLayout", {
                     Name = "\0",
                     Parent = Items["SubPages"].Instance,
                     FillDirection = Enum.FillDirection.Horizontal,
-                    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                    HorizontalFlex = Enum.UIFlexAlignment.Fill,
                     VerticalAlignment = Enum.VerticalAlignment.Center,
-                    Padding = UDim.new(0, 6),
+                    Padding = UDim.new(0, 1),
                     SortOrder = Enum.SortOrder.LayoutOrder
                 })
 
                 Library:Create("UIPadding", {
                     Name = "\0",
                     Parent = Items["SubPages"].Instance,
-                    PaddingTop = UDim.new(0, 3),
-                    PaddingBottom = UDim.new(0, 3),
-                    PaddingLeft = UDim.new(0, 6),
-                    PaddingRight = UDim.new(0, 6)
+                    PaddingTop = UDim.new(0, 1),
+                    PaddingBottom = UDim.new(0, 1),
+                    PaddingLeft = UDim.new(0, 1),
+                    PaddingRight = UDim.new(0, 1)
                 })
 
                 Page.Items = Items
@@ -8208,60 +8199,59 @@ do
                     TextColor3 = Color3.fromRGB(0, 0, 0),
                     Text = "",
                     AutoButtonColor = false,
-                    BackgroundColor3 = Library.Theme["Element"],
-                    BackgroundTransparency = 0,
-                    Size = UDim2.new(0, 0, 0, 20),
+                    Size = UDim2.new(1, 0, 1, 0),
                     BorderSizePixel = 0,
-                    AutomaticSize = Enum.AutomaticSize.X
-                }):AddToTheme({
-                    BackgroundColor3 = "Element"
-                })
+                    BackgroundColor3 = Library.Theme["Outline"]
+                }):AddToTheme({ BackgroundColor3 = "Outline" })
 
-                -- equal padding all sides so label sits dead-center
-                Library:Create("UIPadding", {
-                    Name = "\0",
-                    Parent = Items["Inactive"].Instance,
-                    PaddingLeft = UDim.new(0, 10),
-                    PaddingRight = UDim.new(0, 10),
-                    PaddingTop = UDim.new(0, 4),
-                    PaddingBottom = UDim.new(0, 4)
-                })
-
-                Items["Label"] = Library:Create("TextLabel", {
+                Items["InactiveInline"] = Library:Create("TextButton", {
                     Name = "\0",
                     FontFace = Library.Font,
                     TextSize = Library.FontSize,
                     Parent = Items["Inactive"].Instance,
+                    TextColor3 = Color3.fromRGB(0, 0, 0),
+                    Text = "",
+                    AutoButtonColor = false,
+                    Position = UDim2.new(0, 1, 0, 1),
+                    Size = UDim2.new(1, -2, 1, -2),
+                    BorderSizePixel = 0,
+                    BackgroundColor3 = Library.Theme["Outline"]
+                }):AddToTheme({ BackgroundColor3 = "Outline" })
+
+                Library:Create("UIGradient", {
+                    Name = "\0",
+                    Parent = Items["InactiveInline"].Instance,
+                    Rotation = -90,
+                    Color = ColorSequence.new {
+                        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                        ColorSequenceKeypoint.new(1, Color3.fromRGB(172, 172, 172))
+                    }
+                })
+
+                Items["Text"] = Library:Create("TextLabel", {
+                    Name = "\0",
+                    FontFace = Library.Font,
+                    TextSize = Library.FontSize,
+                    Parent = Items["InactiveInline"].Instance,
                     Text = Page.Name,
-                    TextColor3 = Library.Theme["Inactive Text"],
+                    TextColor3 = Library.Theme["Text"],
                     TextXAlignment = Enum.TextXAlignment.Center,
                     TextYAlignment = Enum.TextYAlignment.Center,
+                    TextWrapped = false,
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     AnchorPoint = Vector2.new(0.5, 0.5),
                     Position = UDim2.new(0.5, 0, 0.5, 0),
-                    Size = UDim2.new(0, 0, 0, 12),
-                    AutomaticSize = Enum.AutomaticSize.X
-                }):AddToTheme({ TextColor3 = "Inactive Text" })
+                    Size = UDim2.new(1, -16, 1, 0)
+                }):AddToTheme({ TextColor3 = "Text" })
 
-                Items["OuterStroke"] = Library:Create("UIStroke", {
+                Library:Create("UIStroke", {
                     Name = "\0",
                     Parent = Items["Inactive"].Instance,
-                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                     LineJoinMode = Enum.LineJoinMode.Miter,
-                    Color = Library.Theme["Border"],
-                    Thickness = 1,
+                    Color = Library.Theme["Border 2"],
                     BorderOffset = UDim.new(0, 1)
-                }):AddToTheme({ Color = "Border" })
-
-                Items["InnerStroke"] = Library:Create("UIStroke", {
-                    Name = "\0",
-                    Parent = Items["Inactive"].Instance,
-                    ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                    LineJoinMode = Enum.LineJoinMode.Miter,
-                    Color = Library.Theme["Outline"],
-                    Thickness = 1
-                }):AddToTheme({ Color = "Outline" })
+                }):AddToTheme({ Color = "Border 2" })
 
                 Items["Page"] = Library:Create("Frame", {
                     Name = "\0",
@@ -8356,34 +8346,14 @@ do
                 Debounce = true
 
                 if Bool then
-                    Items["Inactive"]:ChangeItemTheme({ BackgroundColor3 = "Hovered Element" })
-                    Items["Inactive"]:Tween({ BackgroundColor3 = Library.Theme["Hovered Element"] })
-                    if Items["Label"] then
-                        Items["Label"]:ChangeItemTheme({ TextColor3 = "Accent" })
-                        Items["Label"]:Tween({ TextColor3 = Library.Theme.Accent })
-                    end
-                    if Items["OuterStroke"] then
-                        Items["OuterStroke"]:ChangeItemTheme({ Color = "Accent" })
-                        Items["OuterStroke"]:Tween({ Color = Library.Theme.Accent })
-                    end
-                    if Items["InnerStroke"] then
-                        Items["InnerStroke"]:ChangeItemTheme({ Color = "Outline" })
-                        Items["InnerStroke"]:Tween({ Color = Library.Theme["Outline"] })
+                    if Items["Text"] then
+                        Items["Text"]:ChangeItemTheme({ TextColor3 = "Accent" })
+                        Items["Text"]:Tween({ TextColor3 = Library.Theme.Accent })
                     end
                 else
-                    Items["Inactive"]:ChangeItemTheme({ BackgroundColor3 = "Element" })
-                    Items["Inactive"]:Tween({ BackgroundColor3 = Library.Theme["Element"] })
-                    if Items["Label"] then
-                        Items["Label"]:ChangeItemTheme({ TextColor3 = "Inactive Text" })
-                        Items["Label"]:Tween({ TextColor3 = Library.Theme["Inactive Text"] })
-                    end
-                    if Items["OuterStroke"] then
-                        Items["OuterStroke"]:ChangeItemTheme({ Color = "Border" })
-                        Items["OuterStroke"]:Tween({ Color = Library.Theme["Border"] })
-                    end
-                    if Items["InnerStroke"] then
-                        Items["InnerStroke"]:ChangeItemTheme({ Color = "Outline" })
-                        Items["InnerStroke"]:Tween({ Color = Library.Theme["Outline"] })
+                    if Items["Text"] then
+                        Items["Text"]:ChangeItemTheme({ TextColor3 = "Text" })
+                        Items["Text"]:Tween({ TextColor3 = Library.Theme.Text })
                     end
                 end
 
