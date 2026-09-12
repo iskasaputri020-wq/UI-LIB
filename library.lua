@@ -7659,10 +7659,69 @@ do
 
                 Items["Header"].Instance.Visible = Window.IsOpen
 
+                -- Brand row (logo + name) above main tabs — Align: Left | Center | Right
+                Window.BrandAlign = tostring(Params.BrandAlign or Params.brandAlign or "Right")
+                Window.BrandName = tostring(Params.BrandName or Params.brandName or Params.Title or Window.Title or "UI")
+                Window.BrandLogo = Params.Logo or Params.logo or "" -- rbxassetid or blank
+
+                Items["BrandBar"] = Library:Create("Frame", {
+                    Name = "\0",
+                    Parent = Items["MainFrame"].Instance,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 10, 0, 6),
+                    Size = UDim2.new(1, -20, 0, 18),
+                    BorderSizePixel = 0
+                })
+
+                local brandAlign = string.lower(Window.BrandAlign)
+                local brandHAlign = Enum.HorizontalAlignment.Right
+                if brandAlign == "left" then
+                    brandHAlign = Enum.HorizontalAlignment.Left
+                elseif brandAlign == "center" then
+                    brandHAlign = Enum.HorizontalAlignment.Center
+                end
+
+                Library:Create("UIListLayout", {
+                    Name = "\0",
+                    Parent = Items["BrandBar"].Instance,
+                    FillDirection = Enum.FillDirection.Horizontal,
+                    HorizontalAlignment = brandHAlign,
+                    VerticalAlignment = Enum.VerticalAlignment.Center,
+                    Padding = UDim.new(0, 6),
+                    SortOrder = Enum.SortOrder.LayoutOrder
+                })
+
+                Items["BrandLogo"] = Library:Create("ImageLabel", {
+                    Name = "\0",
+                    Parent = Items["BrandBar"].Instance,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(0, 14, 0, 14),
+                    Image = tostring(Window.BrandLogo or ""),
+                    ScaleType = Enum.ScaleType.Fit,
+                    ImageColor3 = Color3.new(1, 1, 1),
+                    Visible = (type(Window.BrandLogo) == "string" and Window.BrandLogo ~= "")
+                })
+
+                Items["BrandName"] = Library:Create("TextLabel", {
+                    Name = "\0",
+                    Parent = Items["BrandBar"].Instance,
+                    FontFace = Library.Font,
+                    TextSize = Library.FontSize,
+                    Text = Window.BrandName,
+                    TextColor3 = Library.Theme["Text"],
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    Size = UDim2.new(0, 0, 0, 14),
+                    AutomaticSize = Enum.AutomaticSize.X,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextYAlignment = Enum.TextYAlignment.Center
+                }):AddToTheme({ TextColor3 = "Text" })
+
                 Items["PagesOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 11),
+                    Position = UDim2.new(0, 10, 0, 28),
                     Size = UDim2.new(1, -20, 0, 30),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
@@ -7689,8 +7748,8 @@ do
                 Items["ContentOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 42),
-                    Size = UDim2.new(1, -20, 1, -52),
+                    Position = UDim2.new(0, 10, 0, 60),
+                    Size = UDim2.new(1, -20, 1, -70),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
                 }):AddToTheme({ BackgroundColor3 = 'Border 2' })
@@ -7868,6 +7927,37 @@ do
             function Window:SetTitle(Text)
                 Window.Title = tostring(Text or "Panel")
                 Items["HeaderTitle"].Instance.Text = Window.Title
+            end
+
+            function Window:SetBrandName(Text)
+                Window.BrandName = tostring(Text or "")
+                if Items["BrandName"] then
+                    Items["BrandName"].Instance.Text = Window.BrandName
+                end
+            end
+
+            function Window:SetBrandLogo(Image)
+                Window.BrandLogo = tostring(Image or "")
+                if Items["BrandLogo"] then
+                    Items["BrandLogo"].Instance.Image = Window.BrandLogo
+                    Items["BrandLogo"].Instance.Visible = Window.BrandLogo ~= ""
+                end
+            end
+
+            function Window:SetBrandAlign(Align)
+                Window.BrandAlign = tostring(Align or "Right")
+                local bar = Items["BrandBar"] and Items["BrandBar"].Instance
+                if not bar then return end
+                local layout = bar:FindFirstChildOfClass("UIListLayout")
+                if not layout then return end
+                local a = string.lower(Window.BrandAlign)
+                if a == "left" then
+                    layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+                elseif a == "center" then
+                    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                else
+                    layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+                end
             end
 
             function Window:SetDockText(Text)
@@ -8115,27 +8205,44 @@ do
                     FontFace = Library.Font,
                     TextSize = Library.FontSize,
                     Parent = Page.Page.Items["SubPages"].Instance,
-                    TextColor3 = Library.Theme["Inactive Text"],
-                    Text = Page.Name,
+                    TextColor3 = Color3.fromRGB(0, 0, 0),
+                    Text = "",
                     AutoButtonColor = false,
                     BackgroundColor3 = Library.Theme["Element"],
                     BackgroundTransparency = 0,
-                    Size = UDim2.new(0, 0, 0, 18),
+                    Size = UDim2.new(0, 0, 0, 20),
                     BorderSizePixel = 0,
                     AutomaticSize = Enum.AutomaticSize.X
                 }):AddToTheme({
-                    TextColor3 = "Inactive Text",
                     BackgroundColor3 = "Element"
                 })
 
+                -- equal padding all sides so label sits dead-center
                 Library:Create("UIPadding", {
                     Name = "\0",
                     Parent = Items["Inactive"].Instance,
                     PaddingLeft = UDim.new(0, 10),
                     PaddingRight = UDim.new(0, 10),
-                    PaddingTop = UDim.new(0, 1),
-                    PaddingBottom = UDim.new(0, 1)
+                    PaddingTop = UDim.new(0, 4),
+                    PaddingBottom = UDim.new(0, 4)
                 })
+
+                Items["Label"] = Library:Create("TextLabel", {
+                    Name = "\0",
+                    FontFace = Library.Font,
+                    TextSize = Library.FontSize,
+                    Parent = Items["Inactive"].Instance,
+                    Text = Page.Name,
+                    TextColor3 = Library.Theme["Inactive Text"],
+                    TextXAlignment = Enum.TextXAlignment.Center,
+                    TextYAlignment = Enum.TextYAlignment.Center,
+                    BackgroundTransparency = 1,
+                    BorderSizePixel = 0,
+                    AnchorPoint = Vector2.new(0.5, 0.5),
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                    Size = UDim2.new(0, 0, 0, 12),
+                    AutomaticSize = Enum.AutomaticSize.X
+                }):AddToTheme({ TextColor3 = "Inactive Text" })
 
                 Items["OuterStroke"] = Library:Create("UIStroke", {
                     Name = "\0",
@@ -8249,14 +8356,12 @@ do
                 Debounce = true
 
                 if Bool then
-                    Items["Inactive"]:ChangeItemTheme({
-                        TextColor3 = "Accent",
-                        BackgroundColor3 = "Hovered Element"
-                    })
-                    Items["Inactive"]:Tween({
-                        TextColor3 = Library.Theme.Accent,
-                        BackgroundColor3 = Library.Theme["Hovered Element"]
-                    })
+                    Items["Inactive"]:ChangeItemTheme({ BackgroundColor3 = "Hovered Element" })
+                    Items["Inactive"]:Tween({ BackgroundColor3 = Library.Theme["Hovered Element"] })
+                    if Items["Label"] then
+                        Items["Label"]:ChangeItemTheme({ TextColor3 = "Accent" })
+                        Items["Label"]:Tween({ TextColor3 = Library.Theme.Accent })
+                    end
                     if Items["OuterStroke"] then
                         Items["OuterStroke"]:ChangeItemTheme({ Color = "Accent" })
                         Items["OuterStroke"]:Tween({ Color = Library.Theme.Accent })
@@ -8266,14 +8371,12 @@ do
                         Items["InnerStroke"]:Tween({ Color = Library.Theme["Outline"] })
                     end
                 else
-                    Items["Inactive"]:ChangeItemTheme({
-                        TextColor3 = "Inactive Text",
-                        BackgroundColor3 = "Element"
-                    })
-                    Items["Inactive"]:Tween({
-                        TextColor3 = Library.Theme["Inactive Text"],
-                        BackgroundColor3 = Library.Theme["Element"]
-                    })
+                    Items["Inactive"]:ChangeItemTheme({ BackgroundColor3 = "Element" })
+                    Items["Inactive"]:Tween({ BackgroundColor3 = Library.Theme["Element"] })
+                    if Items["Label"] then
+                        Items["Label"]:ChangeItemTheme({ TextColor3 = "Inactive Text" })
+                        Items["Label"]:Tween({ TextColor3 = Library.Theme["Inactive Text"] })
+                    end
                     if Items["OuterStroke"] then
                         Items["OuterStroke"]:ChangeItemTheme({ Color = "Border" })
                         Items["OuterStroke"]:Tween({ Color = Library.Theme["Border"] })
