@@ -7735,7 +7735,7 @@ do
                 Items["Header"].Instance.Visible = Window.IsOpen
 
                 -- Brand row (logo + name) above main tabs — Align: Left | Center | Right
-                Window.BrandAlign = tostring(Params.BrandAlign or Params.brandAlign or "Right")
+                Window.BrandAlign = tostring(Params.BrandAlign or Params.brandAlign or "Center")
                 Window.BrandName = tostring(Params.BrandName or Params.brandName or Params.Title or Window.Title or "Methane")
                 local defaultLogo = "rbxassetid://72404794660074"
                 local logoIn = Params.Logo or Params.logo
@@ -7753,17 +7753,17 @@ do
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
                     BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 10, 0, 6),
-                    Size = UDim2.new(1, -20, 0, 18),
+                    Position = UDim2.new(0, 10, 0, 4),
+                    Size = UDim2.new(1, -20, 0, 28),
                     BorderSizePixel = 0
                 })
 
                 local brandAlign = string.lower(Window.BrandAlign)
-                local brandHAlign = Enum.HorizontalAlignment.Right
+                local brandHAlign = Enum.HorizontalAlignment.Center
                 if brandAlign == "left" then
                     brandHAlign = Enum.HorizontalAlignment.Left
-                elseif brandAlign == "center" then
-                    brandHAlign = Enum.HorizontalAlignment.Center
+                elseif brandAlign == "right" then
+                    brandHAlign = Enum.HorizontalAlignment.Right
                 end
 
                 Library:Create("UIListLayout", {
@@ -7772,7 +7772,7 @@ do
                     FillDirection = Enum.FillDirection.Horizontal,
                     HorizontalAlignment = brandHAlign,
                     VerticalAlignment = Enum.VerticalAlignment.Center,
-                    Padding = UDim.new(0, 6),
+                    Padding = UDim.new(0, 8),
                     SortOrder = Enum.SortOrder.LayoutOrder
                 })
 
@@ -7781,7 +7781,7 @@ do
                     Parent = Items["BrandBar"].Instance,
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(0, 16, 0, 16),
+                    Size = UDim2.new(0, 24, 0, 24),
                     Image = tostring(Window.BrandLogo or ""),
                     ScaleType = Enum.ScaleType.Fit,
                     ImageColor3 = Color3.new(1, 1, 1),
@@ -7792,12 +7792,12 @@ do
                     Name = "\0",
                     Parent = Items["BrandBar"].Instance,
                     FontFace = Library.Font,
-                    TextSize = Library.FontSize,
+                    TextSize = 16,
                     Text = Window.BrandName,
                     TextColor3 = Library.Theme["Text"],
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(0, 0, 0, 14),
+                    Size = UDim2.new(0, 0, 0, 24),
                     AutomaticSize = Enum.AutomaticSize.X,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     TextYAlignment = Enum.TextYAlignment.Center
@@ -7806,7 +7806,7 @@ do
                 Items["PagesOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 28),
+                    Position = UDim2.new(0, 10, 0, 36),
                     Size = UDim2.new(1, -20, 0, 30),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
@@ -7833,8 +7833,8 @@ do
                 Items["ContentOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 60),
-                    Size = UDim2.new(1, -20, 1, -70),
+                    Position = UDim2.new(0, 10, 0, 68),
+                    Size = UDim2.new(1, -20, 1, -78),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
                 }):AddToTheme({ BackgroundColor3 = 'Border 2' })
