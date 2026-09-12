@@ -7755,7 +7755,7 @@ do
                     Parent = Items["MainFrame"].Instance,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 10, 0, 4),
-                    Size = UDim2.new(1, -20, 0, 48),
+                    Size = UDim2.new(1, -20, 0, 34),
                     BorderSizePixel = 0
                 })
 
@@ -7782,7 +7782,7 @@ do
                     Parent = Items["BrandBar"].Instance,
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(0, 44, 0, 44),
+                    Size = UDim2.new(0, 30, 0, 30),
                     Image = tostring(Window.BrandLogo or ""),
                     ScaleType = Enum.ScaleType.Fit,
                     ImageColor3 = Color3.new(1, 1, 1),
@@ -7807,7 +7807,7 @@ do
                 Items["PagesOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 56),
+                    Position = UDim2.new(0, 10, 0, 40),
                     Size = UDim2.new(1, -20, 0, 30),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
@@ -7834,8 +7834,8 @@ do
                 Items["ContentOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 88),
-                    Size = UDim2.new(1, -20, 1, -98),
+                    Position = UDim2.new(0, 10, 0, 72),
+                    Size = UDim2.new(1, -20, 1, -82),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
                 }):AddToTheme({ BackgroundColor3 = 'Border 2' })
