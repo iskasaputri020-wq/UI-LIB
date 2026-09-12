@@ -8179,8 +8179,15 @@ do
         Library.SubPage = function(Self, Params)
             Params = Params or {}
 
+            -- hard cap: max 5 icon sub-tabs per page
+            if type(Self.Pages) == "table" and #Self.Pages >= 5 then
+                warn("[Library] SubPage limit reached (max 5)")
+                return Self.Pages[#Self.Pages]
+            end
+
             local Page = {
                 Name = Params.Name or Params.name or "Page",
+                Icon = Params.Icon or Params.icon or "",
 
                 Window = Self.Window,
                 Page = Self,
@@ -8228,22 +8235,26 @@ do
                     }
                 })
 
-                Items["Text"] = Library:Create("TextLabel", {
+                -- icon only (no text on sub-tabs)
+                local iconImage = tostring(Page.Icon or "")
+                if iconImage == "" then
+                    -- soft fallback glyph if no icon supplied
+                    iconImage = "rbxassetid://0"
+                end
+
+                Items["Icon"] = Library:Create("ImageLabel", {
                     Name = "\0",
-                    FontFace = Library.Font,
-                    TextSize = Library.FontSize,
                     Parent = Items["InactiveInline"].Instance,
-                    Text = Page.Name,
-                    TextColor3 = Library.Theme["Text"],
-                    TextXAlignment = Enum.TextXAlignment.Center,
-                    TextYAlignment = Enum.TextYAlignment.Center,
-                    TextWrapped = false,
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
                     AnchorPoint = Vector2.new(0.5, 0.5),
                     Position = UDim2.new(0.5, 0, 0.5, 0),
-                    Size = UDim2.new(1, -16, 1, 0)
-                }):AddToTheme({ TextColor3 = "Text" })
+                    Size = UDim2.new(0, 14, 0, 14),
+                    Image = iconImage,
+                    ScaleType = Enum.ScaleType.Fit,
+                    ImageColor3 = Library.Theme["Text"],
+                    ImageTransparency = 0
+                }):AddToTheme({ ImageColor3 = "Text" })
 
                 Library:Create("UIStroke", {
                     Name = "\0",
@@ -8346,14 +8357,14 @@ do
                 Debounce = true
 
                 if Bool then
-                    if Items["Text"] then
-                        Items["Text"]:ChangeItemTheme({ TextColor3 = "Accent" })
-                        Items["Text"]:Tween({ TextColor3 = Library.Theme.Accent })
+                    if Items["Icon"] then
+                        Items["Icon"]:ChangeItemTheme({ ImageColor3 = "Accent" })
+                        Items["Icon"]:Tween({ ImageColor3 = Library.Theme.Accent })
                     end
                 else
-                    if Items["Text"] then
-                        Items["Text"]:ChangeItemTheme({ TextColor3 = "Text" })
-                        Items["Text"]:Tween({ TextColor3 = Library.Theme.Text })
+                    if Items["Icon"] then
+                        Items["Icon"]:ChangeItemTheme({ ImageColor3 = "Text" })
+                        Items["Icon"]:Tween({ ImageColor3 = Library.Theme.Text })
                     end
                 end
 
