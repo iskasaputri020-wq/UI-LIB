@@ -1301,6 +1301,103 @@ do
         return Success, Result
     end
 
+    -- Share strings: "MTH" + base64(json config)
+    local function B64Encode(Text)
+        Text = tostring(Text or "")
+        if crypt and crypt.base64 and crypt.base64.encode then
+            return crypt.base64.encode(Text)
+        end
+        if crypt and crypt.base64encode then
+            return crypt.base64encode(Text)
+        end
+        if base64_encode then
+            return base64_encode(Text)
+        end
+        if syn and syn.crypt and syn.crypt.base64 and syn.crypt.base64.encode then
+            return syn.crypt.base64.encode(Text)
+        end
+        local ok, out = pcall(function()
+            return HttpService:Base64Encode(Text)
+        end)
+        if ok and type(out) == "string" then
+            return out
+        end
+        -- minimal fallback (not full base64, still importable by same client)
+        local bytes = { string.byte(Text, 1, #Text) }
+        local hex = {}
+        for i = 1, #bytes do
+            hex[i] = string.format("%02X", bytes[i])
+        end
+        return "HEX" .. table.concat(hex)
+    end
+
+    local function B64Decode(Text)
+        Text = tostring(Text or "")
+        if Text:sub(1, 3) == "HEX" then
+            local hex = Text:sub(4)
+            local chars = {}
+            for i = 1, #hex, 2 do
+                chars[#chars + 1] = string.char(tonumber(hex:sub(i, i + 1), 16) or 0)
+            end
+            return table.concat(chars)
+        end
+        if crypt and crypt.base64 and crypt.base64.decode then
+            return crypt.base64.decode(Text)
+        end
+        if crypt and crypt.base64decode then
+            return crypt.base64decode(Text)
+        end
+        if base64_decode then
+            return base64_decode(Text)
+        end
+        if syn and syn.crypt and syn.crypt.base64 and syn.crypt.base64.decode then
+            return syn.crypt.base64.decode(Text)
+        end
+        local ok, out = pcall(function()
+            return HttpService:Base64Decode(Text)
+        end)
+        if ok and type(out) == "string" then
+            return out
+        end
+        return nil
+    end
+
+    Library.ExportShareString = function(Self)
+        local json = Library:GetConfig()
+        if type(json) ~= "string" or json == "" then
+            return nil, "empty config"
+        end
+        local payload = B64Encode(json)
+        if type(payload) ~= "string" or payload == "" then
+            return nil, "encode failed"
+        end
+        return "MTH" .. payload
+    end
+
+    Library.ImportShareString = function(Self, Share)
+        Share = tostring(Share or ""):gsub("%s+", "")
+        if Share == "" then
+            return false, "empty share string"
+        end
+        if Share:sub(1, 3):upper() ~= "MTH" then
+            return false, "share must start with MTH"
+        end
+        local body = Share:sub(4)
+        local json = B64Decode(body)
+        if type(json) ~= "string" or json == "" then
+            return false, "decode failed"
+        end
+        -- validate json-ish
+        local okDecode = pcall(function()
+            HttpService:JSONDecode(json)
+        end)
+        if not okDecode then
+            return false, "invalid config payload"
+        end
+        local ok, err = Library:LoadConfig(json)
+        return ok, err
+    end
+
     Library.GetConfigsList = function(Self, Element)
         local List = {}
         local ReturnList = {}
@@ -10990,6 +11087,53 @@ do
                     })
 
                     Library:GetConfigsList(ConfigsDropdown)
+                end
+
+                local ShareSection = ConfigsSubPage:Section({ Name = "Share", Side = 2 })
+                do
+                    local SharePaste = ""
+
+                    ShareSection:Button({
+                        Name = "Export Share String",
+                        Callback = function()
+                            local code, err = Library:ExportShareString()
+                            if not code then
+                                Library:Notification("Export failed: " .. tostring(err), 3, Color3.fromRGB(255, 0, 0))
+                                return
+                            end
+                            local clip = setclipboard or toclipboard
+                            if clip then
+                                pcall(clip, code)
+                            end
+                            SharePaste = code
+                            Library:Notification("Share string copied (MTH...)", 3, Color3.fromRGB(0, 255, 0))
+                        end
+                    })
+
+                    ShareSection:Textbox({
+                        Name = "Share string",
+                        Flag = "ConfigShareString",
+                        Placeholder = "MTH...",
+                        Callback = function(Value)
+                            SharePaste = Value
+                        end
+                    })
+
+                    ShareSection:Button({
+                        Name = "Load Share String",
+                        Callback = function()
+                            local src = SharePaste
+                            if (not src or src == "") and Library.Flags["ConfigShareString"] then
+                                src = Library.Flags["ConfigShareString"]
+                            end
+                            local ok, err = Library:ImportShareString(src)
+                            if ok then
+                                Library:Notification("Config loaded from share", 3, Color3.fromRGB(0, 255, 0))
+                            else
+                                Library:Notification("Load failed: " .. tostring(err), 3, Color3.fromRGB(255, 0, 0))
+                            end
+                        end
+                    })
                 end
             end
 
