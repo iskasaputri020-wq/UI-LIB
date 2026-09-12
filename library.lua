@@ -7749,12 +7749,13 @@ do
                     Window.BrandLogo = s
                 end
 
+                -- logo-only brand row (no text on the panel)
                 Items["BrandBar"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 10, 0, 4),
-                    Size = UDim2.new(1, -20, 0, 28),
+                    Size = UDim2.new(1, -20, 0, 48),
                     BorderSizePixel = 0
                 })
 
@@ -7772,7 +7773,7 @@ do
                     FillDirection = Enum.FillDirection.Horizontal,
                     HorizontalAlignment = brandHAlign,
                     VerticalAlignment = Enum.VerticalAlignment.Center,
-                    Padding = UDim.new(0, 8),
+                    Padding = UDim.new(0, 0),
                     SortOrder = Enum.SortOrder.LayoutOrder
                 })
 
@@ -7781,13 +7782,14 @@ do
                     Parent = Items["BrandBar"].Instance,
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(0, 24, 0, 24),
+                    Size = UDim2.new(0, 44, 0, 44),
                     Image = tostring(Window.BrandLogo or ""),
                     ScaleType = Enum.ScaleType.Fit,
                     ImageColor3 = Color3.new(1, 1, 1),
                     Visible = (type(Window.BrandLogo) == "string" and Window.BrandLogo ~= "")
                 })
 
+                -- text kept in API but hidden on the panel (floating header title still shows name)
                 Items["BrandName"] = Library:Create("TextLabel", {
                     Name = "\0",
                     Parent = Items["BrandBar"].Instance,
@@ -7797,16 +7799,15 @@ do
                     TextColor3 = Library.Theme["Text"],
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Size = UDim2.new(0, 0, 0, 24),
+                    Size = UDim2.new(0, 0, 0, 0),
                     AutomaticSize = Enum.AutomaticSize.X,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    TextYAlignment = Enum.TextYAlignment.Center
+                    Visible = false
                 }):AddToTheme({ TextColor3 = "Text" })
 
                 Items["PagesOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 36),
+                    Position = UDim2.new(0, 10, 0, 56),
                     Size = UDim2.new(1, -20, 0, 30),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
@@ -7833,8 +7834,8 @@ do
                 Items["ContentOutline"] = Library:Create("Frame", {
                     Name = "\0",
                     Parent = Items["MainFrame"].Instance,
-                    Position = UDim2.new(0, 10, 0, 68),
-                    Size = UDim2.new(1, -20, 1, -78),
+                    Position = UDim2.new(0, 10, 0, 88),
+                    Size = UDim2.new(1, -20, 1, -98),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Border 2"]
                 }):AddToTheme({ BackgroundColor3 = 'Border 2' })
