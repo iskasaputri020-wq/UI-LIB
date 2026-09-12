@@ -1581,7 +1581,7 @@ do
                     Text = "",
                     AutoButtonColor = false,
                     Position = UDim2.new(0, 1056, 0, 203),
-                    Size = UDim2.new(0, 230, 0, 205),
+                    Size = UDim2.new(0, 230, 0, 255),
                     BorderSizePixel = 0,
                     BackgroundColor3 = Library.Theme["Background"]
                 }):AddToTheme({ BackgroundColor3 = 'Background' })
@@ -1628,7 +1628,7 @@ do
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     AutoButtonColor = false,
                     Position = UDim2.new(0, 10, 0, 12),
-                    Size = UDim2.new(1, -46, 1, -48),
+                    Size = UDim2.new(1, -46, 1, -98),
                     BorderSizePixel = 0,
                 })
 
@@ -1711,7 +1711,7 @@ do
                     AnchorPoint = Vector2.new(1, 0),
                     BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                     Position = UDim2.new(1, -10, 0, 12),
-                    Size = UDim2.new(0, 15, 1, -20),
+                    Size = UDim2.new(0, 15, 1, -70),
                     BorderSizePixel = 0
                 })
 
@@ -1764,7 +1764,7 @@ do
                     Text = "",
                     AutoButtonColor = false,
                     AnchorPoint = Vector2.new(0, 1),
-                    Position = UDim2.new(0, 10, 1, -10),
+                    Position = UDim2.new(0, 10, 1, -58),
                     Size = UDim2.new(1, -46, 0, 15),
                     BorderSizePixel = 0
                 })
@@ -1809,6 +1809,66 @@ do
                     LineJoinMode = Enum.LineJoinMode.Miter,
                     Color = Library.Theme["Border"]
                 }):AddToTheme({ Color = 'Border' })
+
+                -- Hex + RGB inputs under the alpha bar
+                local function MakeInput(Parent, Pos, Size, Placeholder)
+                    local Box = Library:Create("TextBox", {
+                        Name = "\0",
+                        Parent = Parent,
+                        FontFace = Library.Font,
+                        TextSize = Library.FontSize,
+                        Text = "",
+                        PlaceholderText = Placeholder,
+                        PlaceholderColor3 = Library.Theme["Inactive Text"],
+                        TextColor3 = Library.Theme["Text"],
+                        TextXAlignment = Enum.TextXAlignment.Center,
+                        ClearTextOnFocus = false,
+                        BackgroundColor3 = Library.Theme["Element"],
+                        BorderSizePixel = 0,
+                        Position = Pos,
+                        Size = Size
+                    }):AddToTheme({ TextColor3 = "Text", BackgroundColor3 = "Element" })
+
+                    Library:Create("UIStroke", {
+                        Name = "\0",
+                        Parent = Box.Instance,
+                        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                        LineJoinMode = Enum.LineJoinMode.Miter,
+                        Color = Library.Theme["Border"]
+                    }):AddToTheme({ Color = "Border" })
+
+                    return Box
+                end
+
+                Items["HexBox"] = MakeInput(
+                    Items["ColorpickerWindow"].Instance,
+                    UDim2.new(0, 10, 1, -38),
+                    UDim2.new(1, -20, 0, 14),
+                    "#HEX"
+                )
+
+                local rgbY = -20
+                local gap = 4
+                local totalW = 230 - 20
+                local cell = math.floor((totalW - gap * 2) / 3)
+                Items["RBox"] = MakeInput(
+                    Items["ColorpickerWindow"].Instance,
+                    UDim2.new(0, 10, 1, rgbY),
+                    UDim2.new(0, cell, 0, 14),
+                    "R"
+                )
+                Items["GBox"] = MakeInput(
+                    Items["ColorpickerWindow"].Instance,
+                    UDim2.new(0, 10 + cell + gap, 1, rgbY),
+                    UDim2.new(0, cell, 0, 14),
+                    "G"
+                )
+                Items["BBox"] = MakeInput(
+                    Items["ColorpickerWindow"].Instance,
+                    UDim2.new(0, 10 + (cell + gap) * 2, 1, rgbY),
+                    UDim2.new(0, cell, 0, 14),
+                    "B"
+                )
 
                 Items["CopyPasteWindow"] = Library:Create("TextButton", {
                     Name = "\0",
@@ -1956,6 +2016,20 @@ do
                     Items["AlphaColor"]:Tween({ BackgroundColor3 = Colorpicker.Color })
                 end
 
+                -- sync hex / rgb fields (skip while user is typing)
+                local focused = UserInputService:GetFocusedTextBox()
+                if Items["HexBox"] and Items["HexBox"].Instance ~= focused then
+                    Items["HexBox"].Instance.Text = "#" .. string.upper(Colorpicker.HexValue)
+                end
+                if Items["RBox"] and Items["RBox"].Instance ~= focused then
+                    local r = math.floor(Colorpicker.Color.R * 255 + 0.5)
+                    local g = math.floor(Colorpicker.Color.G * 255 + 0.5)
+                    local b = math.floor(Colorpicker.Color.B * 255 + 0.5)
+                    Items["RBox"].Instance.Text = tostring(r)
+                    Items["GBox"].Instance.Text = tostring(g)
+                    Items["BBox"].Instance.Text = tostring(b)
+                end
+
                 if Data.Callback then
                     Library:SafeCall(Data.Callback, Colorpicker.Color, Colorpicker.Alpha)
                 end
@@ -1972,6 +2046,57 @@ do
             Colorpicker.AttachedButton = ColorpickerButton
             Colorpicker.CanUpdateNow = false
             Colorpicker.Frame = ColorpickerWindow
+
+            local function ApplyRGBFromBoxes()
+                local r = math.clamp(tonumber(Items["RBox"].Instance.Text) or 0, 0, 255)
+                local g = math.clamp(tonumber(Items["GBox"].Instance.Text) or 0, 0, 255)
+                local b = math.clamp(tonumber(Items["BBox"].Instance.Text) or 0, 0, 255)
+                local col = Color3.fromRGB(r, g, b)
+                local h, s, v = Color3.toHSV(col)
+                Colorpicker.Hue, Colorpicker.Saturation, Colorpicker.Value = h, s, v
+                -- update draggers
+                pcall(function()
+                    Items["PaletteDragger"].Instance.Position = UDim2.new(s, 0, 1 - v, 0)
+                    Items["HueDragger"].Instance.Position = UDim2.new(0, 0, h, 0)
+                end)
+                Colorpicker:Update()
+            end
+
+            local function ApplyHexFromBox()
+                local raw = tostring(Items["HexBox"].Instance.Text or ""):gsub("%s", "")
+                raw = raw:gsub("^#", "")
+                if #raw ~= 6 then
+                    Items["HexBox"].Instance.Text = "#" .. string.upper(Colorpicker.HexValue)
+                    return
+                end
+                local ok, col = pcall(function()
+                    return Color3.fromHex(raw)
+                end)
+                if not ok or typeof(col) ~= "Color3" then
+                    Items["HexBox"].Instance.Text = "#" .. string.upper(Colorpicker.HexValue)
+                    return
+                end
+                local h, s, v = Color3.toHSV(col)
+                Colorpicker.Hue, Colorpicker.Saturation, Colorpicker.Value = h, s, v
+                pcall(function()
+                    Items["PaletteDragger"].Instance.Position = UDim2.new(s, 0, 1 - v, 0)
+                    Items["HueDragger"].Instance.Position = UDim2.new(0, 0, h, 0)
+                end)
+                Colorpicker:Update()
+            end
+
+            if Items["HexBox"] then
+                Items["HexBox"].Instance.FocusLost:Connect(function()
+                    ApplyHexFromBox()
+                end)
+            end
+            for _, key in ipairs({ "RBox", "GBox", "BBox" }) do
+                if Items[key] then
+                    Items[key].Instance.FocusLost:Connect(function()
+                        ApplyRGBFromBoxes()
+                    end)
+                end
+            end
 
             local function ResolveAttachedFramePosition(Frame)
                 local Parent = Frame and Frame.Parent
