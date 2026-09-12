@@ -267,6 +267,33 @@ do
         })
     end
 
+    -- Lucide icons (Footagesus/Icons)
+    Library.IconsModule = nil
+    pcall(function()
+        Library.IconsModule = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Footagesus/Icons/main/Main-v2.lua"))()
+        if Library.IconsModule and Library.IconsModule.SetIconsType then
+            Library.IconsModule.SetIconsType("lucide")
+        end
+    end)
+
+    Library.ResolveIcon = function(Self, Name)
+        local raw = tostring(Name or "")
+        if raw == "" then return "" end
+        if raw:find("rbxassetid://", 1, true) or raw:find("rbxthumb://", 1, true) then
+            return raw
+        end
+        -- strip optional "lucide:" prefix
+        local key = raw:gsub("^lucide:", "")
+        local mod = Library.IconsModule
+        if mod and type(mod.GetIcon) == "function" then
+            local ok, id = pcall(mod.GetIcon, key)
+            if ok and type(id) == "string" and id ~= "" then
+                return id
+            end
+        end
+        return ""
+    end
+
     Library.Exit = function(Self)
         Self:ApplyWindowInputState(false)
 
@@ -8235,11 +8262,10 @@ do
                     }
                 })
 
-                -- icon only (no text on sub-tabs)
-                local iconImage = tostring(Page.Icon or "")
+                -- icon only (lucide name or rbxassetid)
+                local iconImage = Library:ResolveIcon(Page.Icon)
                 if iconImage == "" then
-                    -- soft fallback glyph if no icon supplied
-                    iconImage = "rbxassetid://0"
+                    iconImage = Library:ResolveIcon("circle")
                 end
 
                 Items["Icon"] = Library:Create("ImageLabel", {
@@ -8253,8 +8279,14 @@ do
                     Image = iconImage,
                     ScaleType = Enum.ScaleType.Fit,
                     ImageColor3 = Library.Theme["Text"],
-                    ImageTransparency = 0
+                    ImageTransparency = 0,
+                    ZIndex = 3
                 }):AddToTheme({ ImageColor3 = "Text" })
+
+                -- let parent buttons receive clicks (ImageLabel must not sink input)
+                pcall(function()
+                    Items["Icon"].Instance.Active = false
+                end)
 
                 Library:Create("UIStroke", {
                     Name = "\0",
@@ -8348,13 +8380,8 @@ do
             local Debounce = false
 
             function Page:Turn(Bool)
-                if Debounce then
-                    return
-                end
-
-                Page.Active = Bool
-
-                Debounce = true
+                -- always update icon state immediately (don't block on fade debounce)
+                Page.Active = Bool == true
 
                 if Bool then
                     if Items["Icon"] then
@@ -8368,6 +8395,17 @@ do
                     end
                 end
 
+                if Debounce then
+                    -- still force visibility parent switch without waiting previous fade
+                    if Bool then
+                        Items["Page"].Instance.Visible = true
+                        Items["Page"].Instance.Parent = Page.Page.Items["Columns"].Instance
+                    end
+                    return
+                end
+
+                Debounce = true
+
                 Items["Page"]:FadeDescendants(Bool, function()
                     Debounce = false
 
@@ -8379,9 +8417,26 @@ do
                 end)
             end
 
-            Items["Inactive"]:Connect("MouseButton1Down", function()
-                for Index, Value in Page.Page.Pages do
-                    Value:Turn(Value == Page)
+            local function SelectThisSubPage()
+                for _, Value in Page.Page.Pages do
+                    if Value ~= Page then
+                        pcall(function() Value:Turn(false) end)
+                    end
+                end
+                pcall(function() Page:Turn(true) end)
+            end
+
+            -- both layers are TextButtons — bind both so clicks always register
+            Items["Inactive"]:Connect("MouseButton1Down", SelectThisSubPage)
+            if Items["InactiveInline"] then
+                Items["InactiveInline"]:Connect("MouseButton1Down", SelectThisSubPage)
+            end
+            pcall(function()
+                Items["Inactive"].Instance.Active = true
+                Items["Inactive"].Instance.Selectable = true
+                if Items["InactiveInline"] then
+                    Items["InactiveInline"].Instance.Active = true
+                    Items["InactiveInline"].Instance.Selectable = true
                 end
             end)
 
@@ -10615,8 +10670,8 @@ do
         Library.CreateSettingsPage = function(Self)
             local Page = Self:Page({ Name = "Settings", Icon = "rbxassetid://0" })
 
-            local ConfigsSubPage = Page:SubPage({ Name = "Configs" })
-            local OtherSubPage = Page:SubPage({ Name = "Other" })
+            local ConfigsSubPage = Page:SubPage({ Name = "Configs", Icon = "folder" })
+            local OtherSubPage = Page:SubPage({ Name = "Other", Icon = "settings" })
 
             do
                 local ConfigName
