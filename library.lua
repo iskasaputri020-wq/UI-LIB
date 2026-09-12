@@ -3624,75 +3624,289 @@ do
                 return Items["ESPPreview"] and Items["ESPPreview"].Instance
             end
 
-            -- Sync preview model visuals from an ESP settings table
-            -- Expected keys: chams, box, skeleton, flags, health (same shape as VantaRivalsESP)
+            -- Sync preview model + 2D ESP overlays from ESP settings table
+            local Overlay = nil
+            local OverlayParts = {}
+
+            local function ensureOverlay()
+                if Overlay and Overlay.Parent then
+                    return Overlay
+                end
+                local host = Items["ESPPreview"] and Items["ESPPreview"].Instance
+                if not host then
+                    return nil
+                end
+                Overlay = host:FindFirstChild("_MethaneESPOverlay")
+                if not Overlay then
+                    Overlay = Instance.new("Frame")
+                    Overlay.Name = "_MethaneESPOverlay"
+                    Overlay.BackgroundTransparency = 1
+                    Overlay.BorderSizePixel = 0
+                    Overlay.Size = UDim2.new(1, -16, 1, -40)
+                    Overlay.Position = UDim2.new(0, 8, 0, 28)
+                    Overlay.ZIndex = 20
+                    Overlay.ClipsDescendants = true
+                    Overlay.Parent = host
+                end
+                return Overlay
+            end
+
+            local function makeLine(parent, name)
+                local f = Instance.new("Frame")
+                f.Name = name
+                f.BorderSizePixel = 0
+                f.AnchorPoint = Vector2.new(0.5, 0.5)
+                f.BackgroundColor3 = Color3.new(1, 1, 1)
+                f.ZIndex = 21
+                f.Visible = false
+                f.Parent = parent
+                return f
+            end
+
+            local function setLine(f, x1, y1, x2, y2, color, thick)
+                if not f then
+                    return
+                end
+                local dx, dy = x2 - x1, y2 - y1
+                local len = math.sqrt(dx * dx + dy * dy)
+                if len < 1 then
+                    f.Visible = false
+                    return
+                end
+                f.Visible = true
+                f.BackgroundColor3 = color
+                f.Size = UDim2.fromOffset(len, math.max(thick or 1, 1))
+                f.Position = UDim2.fromOffset((x1 + x2) / 2, (y1 + y2) / 2)
+                f.Rotation = math.deg(math.atan2(dy, dx))
+            end
+
+            local function ensureParts(ov)
+                if OverlayParts.box then
+                    return OverlayParts
+                end
+                OverlayParts.box = Instance.new("Frame")
+                OverlayParts.box.Name = "Box"
+                OverlayParts.box.BackgroundTransparency = 1
+                OverlayParts.box.BorderSizePixel = 0
+                OverlayParts.box.ZIndex = 21
+                OverlayParts.box.Visible = false
+                OverlayParts.box.Parent = ov
+
+                OverlayParts.boxStroke = Instance.new("UIStroke")
+                OverlayParts.boxStroke.Name = "Stroke"
+                OverlayParts.boxStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                OverlayParts.boxStroke.LineJoinMode = Enum.LineJoinMode.Miter
+                OverlayParts.boxStroke.Thickness = 1
+                OverlayParts.boxStroke.Color = Color3.new(1, 1, 1)
+                OverlayParts.boxStroke.Parent = OverlayParts.box
+
+                OverlayParts.fill = Instance.new("Frame")
+                OverlayParts.fill.Name = "Fill"
+                OverlayParts.fill.BorderSizePixel = 0
+                OverlayParts.fill.ZIndex = 20
+                OverlayParts.fill.Visible = false
+                OverlayParts.fill.Parent = ov
+
+                OverlayParts.health = Instance.new("Frame")
+                OverlayParts.health.Name = "Health"
+                OverlayParts.health.BorderSizePixel = 0
+                OverlayParts.health.BackgroundColor3 = Color3.fromRGB(80, 255, 120)
+                OverlayParts.health.ZIndex = 22
+                OverlayParts.health.Visible = false
+                OverlayParts.health.Parent = ov
+
+                OverlayParts.name = Instance.new("TextLabel")
+                OverlayParts.name.Name = "Name"
+                OverlayParts.name.BackgroundTransparency = 1
+                OverlayParts.name.Font = Enum.Font.Code
+                OverlayParts.name.TextSize = 12
+                OverlayParts.name.TextColor3 = Color3.new(1, 1, 1)
+                OverlayParts.name.TextStrokeTransparency = 0.5
+                OverlayParts.name.Size = UDim2.fromOffset(120, 16)
+                OverlayParts.name.ZIndex = 22
+                OverlayParts.name.Visible = false
+                OverlayParts.name.Parent = ov
+
+                OverlayParts.skel = {}
+                for i = 1, 12 do
+                    OverlayParts.skel[i] = makeLine(ov, "Skel" .. i)
+                end
+
+                OverlayParts.headDot = Instance.new("Frame")
+                OverlayParts.headDot.Name = "HeadDot"
+                OverlayParts.headDot.BorderSizePixel = 0
+                OverlayParts.headDot.AnchorPoint = Vector2.new(0.5, 0.5)
+                OverlayParts.headDot.BackgroundColor3 = Color3.new(1, 1, 1)
+                OverlayParts.headDot.ZIndex = 22
+                OverlayParts.headDot.Visible = false
+                OverlayParts.headDot.Parent = ov
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(1, 0)
+                corner.Parent = OverlayParts.headDot
+
+                OverlayParts.tracer = makeLine(ov, "Tracer")
+
+                return OverlayParts
+            end
+
             function Preview:ApplyESPStyle(ESP)
                 if type(ESP) ~= "table" then
                     return
                 end
+
+                local ov = ensureOverlay()
+                if not ov then
+                    return
+                end
+                local P = ensureParts(ov)
+
                 local viewport = Items["Viewport"] and Items["Viewport"].Instance
-                if not viewport then
-                    return
-                end
                 local model = nil
-                for _, child in ipairs(viewport:GetChildren()) do
-                    if child:IsA("Model") then
-                        model = child
-                        break
-                    end
-                end
-                if not model then
-                    return
-                end
-
-                local chams = ESP.chams or {}
-                local hl = model:FindFirstChild("_MethaneESPPreviewHL")
-                if chams.enabled then
-                    if not hl then
-                        hl = Instance.new("Highlight")
-                        hl.Name = "_MethaneESPPreviewHL"
-                        hl.Parent = model
-                    end
-                    hl.FillColor = chams.fill_color or Color3.new(1, 1, 1)
-                    hl.OutlineColor = chams.outline_color or Color3.new(1, 1, 1)
-                    hl.FillTransparency = typeof(chams.fill_transparency) == "number" and chams.fill_transparency or 0.5
-                    hl.OutlineTransparency = typeof(chams.outline_transparency) == "number" and chams.outline_transparency or 0
-                    hl.DepthMode = chams.visible_only and Enum.HighlightDepthMode.Occluded or Enum.HighlightDepthMode.AlwaysOnTop
-                    hl.Enabled = true
-                elseif hl then
-                    hl.Enabled = false
-                end
-
-                -- name tag
-                local flags = ESP.flags or {}
-                local head = model:FindFirstChild("Head")
-                local bb = model:FindFirstChild("_MethaneESPPreviewBB")
-                if flags.username and head then
-                    if not bb then
-                        bb = Instance.new("BillboardGui")
-                        bb.Name = "_MethaneESPPreviewBB"
-                        bb.Size = UDim2.fromOffset(120, 18)
-                        bb.AlwaysOnTop = true
-                        bb.StudsOffset = Vector3.new(0, 2.2, 0)
-                        bb.Parent = head
-                        local tl = Instance.new("TextLabel")
-                        tl.Name = "Label"
-                        tl.BackgroundTransparency = 1
-                        tl.Size = UDim2.fromScale(1, 1)
-                        tl.Font = Enum.Font.Code
-                        tl.TextSize = 12
-                        tl.TextColor3 = flags.username_color or Color3.new(1, 1, 1)
-                        tl.Text = "Preview"
-                        tl.Parent = bb
-                    else
-                        local tl = bb:FindFirstChild("Label")
-                        if tl then
-                            tl.TextColor3 = flags.username_color or Color3.new(1, 1, 1)
+                if viewport then
+                    for _, child in ipairs(viewport:GetChildren()) do
+                        if child:IsA("Model") then
+                            model = child
+                            break
                         end
                     end
-                    bb.Enabled = true
-                elseif bb then
-                    bb.Enabled = false
+                end
+
+                -- chams on model
+                local chams = ESP.chams or {}
+                if model then
+                    local hl = model:FindFirstChild("_MethaneESPPreviewHL")
+                    if chams.enabled then
+                        if not hl then
+                            hl = Instance.new("Highlight")
+                            hl.Name = "_MethaneESPPreviewHL"
+                            hl.Parent = model
+                        end
+                        hl.FillColor = chams.fill_color or Color3.new(1, 1, 1)
+                        hl.OutlineColor = chams.outline_color or Color3.new(1, 1, 1)
+                        hl.FillTransparency = typeof(chams.fill_transparency) == "number" and chams.fill_transparency or 0.5
+                        hl.OutlineTransparency = typeof(chams.outline_transparency) == "number" and chams.outline_transparency or 0
+                        hl.DepthMode = chams.visible_only and Enum.HighlightDepthMode.Occluded or Enum.HighlightDepthMode.AlwaysOnTop
+                        hl.Enabled = true
+                    elseif hl then
+                        hl.Enabled = false
+                    end
+                end
+
+                -- fixed body rect inside overlay (matches typical preview character)
+                local ow = ov.AbsoluteSize.X
+                local oh = ov.AbsoluteSize.Y
+                if ow < 10 or oh < 10 then
+                    ow, oh = 240, 280
+                end
+                local boxW, boxH = ow * 0.42, oh * 0.62
+                local boxX, boxY = (ow - boxW) / 2, oh * 0.18
+
+                local boxCfg = ESP.box or {}
+                local master = ESP.visuals_enabled ~= false -- if nil treat as allow overlays when features on
+
+                -- BOX
+                if boxCfg.enabled then
+                    P.box.Visible = true
+                    P.box.Position = UDim2.fromOffset(boxX, boxY)
+                    P.box.Size = UDim2.fromOffset(boxW, boxH)
+                    P.boxStroke.Color = boxCfg.color or Color3.new(1, 1, 1)
+                    P.boxStroke.Thickness = math.max(boxCfg.thickness or 1, 1)
+                    if boxCfg.outline then
+                        -- already stroked; optional dark outer via thickness
+                        P.boxStroke.Thickness = math.max(boxCfg.thickness or 1, 1)
+                    end
+                    if boxCfg.fill then
+                        P.fill.Visible = true
+                        P.fill.Position = UDim2.fromOffset(boxX, boxY)
+                        P.fill.Size = UDim2.fromOffset(boxW, boxH)
+                        P.fill.BackgroundColor3 = boxCfg.fill_color or Color3.new(1, 1, 1)
+                        P.fill.BackgroundTransparency = typeof(boxCfg.fill_transparency) == "number" and boxCfg.fill_transparency or 0.55
+                    else
+                        P.fill.Visible = false
+                    end
+                else
+                    P.box.Visible = false
+                    P.fill.Visible = false
+                end
+
+                -- SKELETON (stick figure proportions)
+                local sk = ESP.skeleton or {}
+                local cx = boxX + boxW / 2
+                local headY = boxY + boxH * 0.08
+                local neckY = boxY + boxH * 0.18
+                local hipY = boxY + boxH * 0.52
+                local footY = boxY + boxH * 0.95
+                local shoulderY = boxY + boxH * 0.22
+                local handY = boxY + boxH * 0.45
+                local armSpan = boxW * 0.38
+                local legSpan = boxW * 0.22
+                local skCol = sk.color or Color3.new(1, 1, 1)
+                local skT = math.max(sk.thickness or 1.5, 1)
+
+                local function skLine(i, x1, y1, x2, y2)
+                    if sk.enabled then
+                        setLine(P.skel[i], x1, y1, x2, y2, skCol, skT)
+                    else
+                        if P.skel[i] then P.skel[i].Visible = false end
+                    end
+                end
+
+                skLine(1, cx, headY, cx, neckY) -- head to neck
+                skLine(2, cx, neckY, cx, hipY) -- spine
+                skLine(3, cx - armSpan, shoulderY, cx + armSpan, shoulderY) -- shoulders
+                skLine(4, cx - armSpan, shoulderY, cx - armSpan, handY) -- L arm
+                skLine(5, cx + armSpan, shoulderY, cx + armSpan, handY) -- R arm
+                skLine(6, cx, hipY, cx - legSpan, footY) -- L leg
+                skLine(7, cx, hipY, cx + legSpan, footY) -- R leg
+                for i = 8, 12 do
+                    if P.skel[i] then P.skel[i].Visible = false end
+                end
+
+                if sk.enabled and sk.headdot then
+                    local s = math.max(sk.headdot_size or 4, 2)
+                    P.headDot.Visible = true
+                    P.headDot.BackgroundColor3 = sk.headdot_color or Color3.new(1, 1, 1)
+                    P.headDot.Size = UDim2.fromOffset(s, s)
+                    P.headDot.Position = UDim2.fromOffset(cx, headY)
+                else
+                    P.headDot.Visible = false
+                end
+
+                -- HEALTH BAR
+                local hp = ESP.health or {}
+                if hp.enabled then
+                    local barW = math.max(hp.width or 2, 2)
+                    P.health.Visible = true
+                    P.health.BackgroundColor3 = hp.color_high or Color3.fromRGB(80, 255, 120)
+                    P.health.Position = UDim2.fromOffset(boxX - barW - 3, boxY)
+                    P.health.Size = UDim2.fromOffset(barW, boxH)
+                else
+                    P.health.Visible = false
+                end
+
+                -- NAME
+                local flags = ESP.flags or {}
+                if flags.username then
+                    P.name.Visible = true
+                    P.name.Text = "Preview"
+                    P.name.TextColor3 = flags.username_color or Color3.new(1, 1, 1)
+                    P.name.Position = UDim2.fromOffset(cx - 60, boxY - 18)
+                else
+                    P.name.Visible = false
+                end
+
+                -- TRACER (from bottom of overlay to feet)
+                local tr = ESP.tracer or {}
+                if tr.enabled then
+                    local ox, oy = ow / 2, oh - 2
+                    if tr.origin == "Top" then
+                        oy = 2
+                    elseif tr.origin == "Center" then
+                        oy = oh / 2
+                    end
+                    setLine(P.tracer, ox, oy, cx, footY, tr.color or Color3.new(1, 1, 1), math.max(tr.thickness or 1, 1))
+                else
+                    if P.tracer then P.tracer.Visible = false end
                 end
             end
 
