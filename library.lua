@@ -3620,6 +3620,82 @@ do
                 Items["Text"].Instance.Text = Text
             end
 
+            function Preview:GetFrame()
+                return Items["ESPPreview"] and Items["ESPPreview"].Instance
+            end
+
+            -- Sync preview model visuals from an ESP settings table
+            -- Expected keys: chams, box, skeleton, flags, health (same shape as VantaRivalsESP)
+            function Preview:ApplyESPStyle(ESP)
+                if type(ESP) ~= "table" then
+                    return
+                end
+                local viewport = Items["Viewport"] and Items["Viewport"].Instance
+                if not viewport then
+                    return
+                end
+                local model = nil
+                for _, child in ipairs(viewport:GetChildren()) do
+                    if child:IsA("Model") then
+                        model = child
+                        break
+                    end
+                end
+                if not model then
+                    return
+                end
+
+                local chams = ESP.chams or {}
+                local hl = model:FindFirstChild("_MethaneESPPreviewHL")
+                if chams.enabled then
+                    if not hl then
+                        hl = Instance.new("Highlight")
+                        hl.Name = "_MethaneESPPreviewHL"
+                        hl.Parent = model
+                    end
+                    hl.FillColor = chams.fill_color or Color3.new(1, 1, 1)
+                    hl.OutlineColor = chams.outline_color or Color3.new(1, 1, 1)
+                    hl.FillTransparency = typeof(chams.fill_transparency) == "number" and chams.fill_transparency or 0.5
+                    hl.OutlineTransparency = typeof(chams.outline_transparency) == "number" and chams.outline_transparency or 0
+                    hl.DepthMode = chams.visible_only and Enum.HighlightDepthMode.Occluded or Enum.HighlightDepthMode.AlwaysOnTop
+                    hl.Enabled = true
+                elseif hl then
+                    hl.Enabled = false
+                end
+
+                -- name tag
+                local flags = ESP.flags or {}
+                local head = model:FindFirstChild("Head")
+                local bb = model:FindFirstChild("_MethaneESPPreviewBB")
+                if flags.username and head then
+                    if not bb then
+                        bb = Instance.new("BillboardGui")
+                        bb.Name = "_MethaneESPPreviewBB"
+                        bb.Size = UDim2.fromOffset(120, 18)
+                        bb.AlwaysOnTop = true
+                        bb.StudsOffset = Vector3.new(0, 2.2, 0)
+                        bb.Parent = head
+                        local tl = Instance.new("TextLabel")
+                        tl.Name = "Label"
+                        tl.BackgroundTransparency = 1
+                        tl.Size = UDim2.fromScale(1, 1)
+                        tl.Font = Enum.Font.Code
+                        tl.TextSize = 12
+                        tl.TextColor3 = flags.username_color or Color3.new(1, 1, 1)
+                        tl.Text = "Preview"
+                        tl.Parent = bb
+                    else
+                        local tl = bb:FindFirstChild("Label")
+                        if tl then
+                            tl.TextColor3 = flags.username_color or Color3.new(1, 1, 1)
+                        end
+                    end
+                    bb.Enabled = true
+                elseif bb then
+                    bb.Enabled = false
+                end
+            end
+
             local ViewportCamera = Instance.new("Camera")
 
             Items["Viewport"].Instance.CurrentCamera = ViewportCamera
